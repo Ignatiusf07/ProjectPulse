@@ -1,0 +1,26 @@
+.contact-container {
+            background-color: #f8f8f8;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            margin: 2rem auto;
+            font-family: 'Arial', sans-serif;
+          }
+          
+          .contact-heading {
+            color: #333;
+            margin-bottom: 1rem;
+          }
+          
+          .contact-sub-heading {
+            color: #666;
+            font-size: 1.2rem;
+            margin: 0.5rem 0;
+          }
+          
+          .contact-link {
+            color: #007bff;
+            text-decoration: none;
+          }

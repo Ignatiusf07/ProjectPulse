@@ -1,0 +1,76 @@
+.registration-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f4f7fc;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.registration-form {
+  background: #fff;
+  padding: 40px 32px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  margin-top: 20px;
+}
+
+.registration-form h2 {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.registration-form label {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 2px;
+  margin-top: 6px;
+}
+
+.registration-form input[type="text"],
+.registration-form input[type="email"],
+.registration-form input[type="password"] {
+  margin-bottom: 0px;
+  padding: 7px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #f5f6fa;
+  box-sizing: border-box;
+}
+
+.registration-form input:focus {
+  border-color: #4CAF50;
+}
+
+.registration-form input[type="checkbox"] {
+  margin-left: 0;
+}
+
+.registration-form button {
+  background: #4CAF50;
+  color: #fff;
+  padding: 12px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 18px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.registration-form button:hover {
+  background: #388e3c;
+}

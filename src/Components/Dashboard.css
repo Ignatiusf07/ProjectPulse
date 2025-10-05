@@ -1,0 +1,130 @@
+.dashboard-container {
+  padding: 40px;
+  background: linear-gradient(120deg, #F3F3F3 0%, #E1E8F0 60%, #009688 100%);
+  min-height: 100vh;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  border-radius: 0 0 32px 32px;
+  box-shadow: 0 8px 32px rgba(0,150,136,0.08);
+}
+
+.dashboard-container h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4B2067;
+  margin-bottom: 36px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 12px rgba(75,32,103,0.10);
+}
+
+.add-task-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+  gap: 10px;
+}
+
+.add-task-section input {
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.add-task-section input:focus {
+  border-color: #4CAF50;
+}
+
+.add-task-section button {
+  padding: 10px 20px;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-task-section button:hover {
+  background: #388e3c;
+}
+
+.kanban-board {
+  display: flex;
+  gap: 48px;
+  justify-content: center;
+  margin-top: 24px;
+  padding-bottom: 24px;
+  border-bottom: 2px dashed #009688;
+}
+
+.kanban-column {
+  /* Add subtle shadow and border for separation */
+  background: linear-gradient(120deg, #fff 60%, #E1E8F0 100%);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(75,32,103,0.10), 0 0 0 4px #F3F3F3;
+  border-right: 2px solid #E1E8F0;
+  padding: 32px 22px;
+  min-width: 260px;
+  max-width: 320px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1.5px solid #009688;
+}
+.kanban-column:last-child {
+  border-right: none;
+}
+
+.kanban-column h3 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #4B2067;
+  margin-bottom: 22px;
+  letter-spacing: 0.5px;
+}
+.task-actions button {
+  padding: 7px 16px;
+  background: linear-gradient(90deg, #009688 0%, #4B2067 100%);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,150,136,0.10);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.task-actions button:hover {
+  background: linear-gradient(90deg, #4B2067 0%, #009688 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(75,32,103,0.18);
+}
+
+.task-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.task-actions button {
+  padding: 5px 12px;
+  background: #e0e7ef;
+  color: #333;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.task-actions button:hover {
+  background: #4CAF50;
+  color: #fff;
+}

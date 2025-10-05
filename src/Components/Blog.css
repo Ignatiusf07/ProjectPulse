@@ -1,0 +1,92 @@
+* {
+          box-sizing: border-box;
+        }
+        
+        /* Base styles for the body and a container to center the content */
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          line-height: 1.6;
+          margin: 0;
+          padding: 2rem;
+          background-color: #f4f7f9;
+          color: #333;
+        }
+        
+        .blog-container {
+          max-width: 800px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          padding: 2rem;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+          margin-top: 20px;
+        }
+        
+        /* Typography styles for headings and paragraphs */
+        h1 {
+          font-size: 2.5rem;
+          font-weight: 700;
+          color: #2c3e50;
+          margin-bottom: 0.5rem;
+          text-align: center;
+        }
+        
+        h2 {
+          font-size: 1.8rem;
+          font-weight: 600;
+          color: #34495e;
+          margin-top: 2rem;
+          border-bottom: 2px solid #ecf0f1;
+          padding-bottom: 0.5rem;
+        }
+        
+        h3 {
+          font-size: 1.4rem;
+          font-weight: 600;
+          color: #34495e;
+          margin-top: 1.5rem;
+        }
+        
+        p {
+          font-size: 1rem;
+          margin-bottom: 1.5rem;
+          color: #555;
+        }
+        
+        /* List styles for better readability */
+        ul {
+          list-style-type: disc;
+          padding-left: 2rem;
+          margin-bottom: 1.5rem;
+        }
+        
+        li {
+          margin-bottom: 0.75rem;
+        }
+        
+        /* Styles for the section break */
+        hr {
+          border: 0;
+          height: 1px;
+          background-color: #ecf0f1;
+          margin: 2rem 0;
+        }
+        
+        /* Responsive design for smaller screens */
+        @media (max-width: 768px) {
+          .blog-container {
+            padding: 1rem;
+          }
+        
+          h1 {
+            font-size: 2rem;
+          }
+        
+          h2 {
+            font-size: 1.6rem;
+          }
+        
+          h3 {
+            font-size: 1.2rem;
+          }
+        }
