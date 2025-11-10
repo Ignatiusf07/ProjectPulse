@@ -5,7 +5,7 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDMruw8ZD9xefSkX_4y1xuv9tdVkF7T-ng",
+  apiKey: "###",
   authDomain: "projectpulse-ad152.firebaseapp.com",
   projectId: "projectpulse-ad152",
   storageBucket: "projectpulse-ad152.firebasestorage.app",
