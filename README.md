@@ -1,3 +1,4 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ignatiusf07/ProjectPulse) 
 
 # ProjectPulse Kanban Board
 
