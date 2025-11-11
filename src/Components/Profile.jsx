@@ -81,7 +81,7 @@ const Profile = () => {
       if (u) {
         // Determine role based on email
         const email = u.email || '';
-        const isAdmin = email === 'serpentssouthside0@gmail.com';
+        const isAdmin = email === 'ignatiuspinto95@gmail.com';
         const profileRef = doc(db, 'profiles', u.uid);
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
@@ -93,7 +93,7 @@ const Profile = () => {
           setDisplayName(u.displayName || '');
           setAvatarUrl('');
           setRole(isAdmin ? 'admin' : 'user');
-        }
+       Y }
       }
     });
     return () => unsubscribe();

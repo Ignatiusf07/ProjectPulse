@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import './Dashboard.css';
-import { db, auth } from '../firebase';
+import { db, auth, functions } from '../firebase';
+//import { db, auth } from '../firebase';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs } from "firebase/firestore"; 
+import { httpsCallable } from 'firebase/functions'; 
+
 import AssignedTasks from './AssignedTasks';
 
 const initialTasks = [
@@ -101,45 +105,45 @@ const Dashboard = () => {
       setTaskDueDate('');
       setShowAddTask(false);
       await saveTasks(updatedTasks);
-
-      // If assignedTo is set and not the admin, add to recipient's board
       if (taskAssign && taskAssign !== user.email) {
-        // Find the recipient's UID from profiles collection
-        try {
-          // Query profiles collection for the assigned email
-          const profilesRef = db.collection ? db.collection('profiles') : null;
-          let recipientUid = null;
-          if (profilesRef) {
-            const snapshot = await profilesRef.where('email', '==', taskAssign).get();
-            if (!snapshot.empty) {
-              recipientUid = snapshot.docs[0].id;
-            }
-          } else {
-            // Firestore modular API fallback
-            const { getDocs, collection, where, query } = await import('firebase/firestore');
-            const q = query(collection(db, 'profiles'), where('email', '==', taskAssign));
-            const querySnapshot = await getDocs(q);
-            querySnapshot.forEach((doc) => {
-              recipientUid = doc.id;
-            });
-          }
-          if (recipientUid) {
-            // Get recipient's current tasks
-            const boardRef = doc(db, 'kanbanBoards', recipientUid);
-            const boardSnap = await getDoc(boardRef);
-            let recipientTasks = [];
-            if (boardSnap.exists()) {
-              recipientTasks = boardSnap.data().tasks || [];
-            }
-            // Add the new task to recipient's board
-            await setDoc(boardRef, { tasks: [...recipientTasks, newTask] });
-          }
-        } catch (err) {
-          console.error('Error assigning task to user:', err);
-        }
-      }
+  try {
+    // 1) Look up the user by email in profiles collection:
+    const q = query(collection(db, "profiles"), where("email", "==", taskAssign));
+    const qs = await getDocs(q);
+
+    if (qs.empty) {
+      alert("No user found with email: " + taskAssign);
+      return;
     }
-  };
+
+    const recipientUid = qs.docs[0].id;
+
+    // 2) Call your deployed Cloud Function using REST fetch:
+    const FUNCTION_URL = "https://us-central1-projectpulse-ad152.cloudfunctions.net/assignTask";
+
+    const res = await fetch(FUNCTION_URL, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ recipientUid, newTask })
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text);
+    }
+
+  } catch (err) {
+    console.error("🔥 Error assigning task:", err);
+    alert("Failed to assign task: " + err.message);
+  }
+}
+
+      
+  }
+};
 
   // Edit task logic
   const startEditTask = (task) => {
