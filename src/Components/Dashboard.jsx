@@ -31,8 +31,12 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);  
   const [user, setUser] = useState(auth.currentUser);  
   const [role, setRole] = useState('user');  
+  const [showEditTask, setShowEditTask] = useState(false);  
+  const [editTaskPriority, setEditTaskPriority] = useState('Medium');  
+  const [editTaskDueDate, setEditTaskDueDate] = useState('');
   const [showAssignedTasks, setShowAssignedTasks] = useState(false);  
   const [users, setUsers] = useState([]);  
+  
   
   useEffect(() => {  
     let boardUnsub = null;  
@@ -208,27 +212,114 @@ const Dashboard = () => {
   };  
   
   // Edit task logic  
-  const startEditTask = (task) => {  
-    setEditTaskId(task.id);  
-    setEditTaskName(task.title);  
-    setEditTaskDesc(task.description || '');  
-    setEditTaskAssign(task.assignedTo || '');  
-  };  
+ const startEditTask = (task) => {  
+  setEditTaskId(task.id);  
+  setEditTaskName(task.title);  
+  setEditTaskDesc(task.description || '');  
+  setEditTaskAssign(task.assignedTo || '');  
+  setEditTaskPriority(task.priority || 'Medium');  
+  setEditTaskDueDate(task.dueDate || '');  
+  setShowEditTask(true);  
+};
   
   const saveEditTask = async (e) => {  
-    e.preventDefault();  
-    const updatedTasks = tasks.map(task =>  
-      task.id === editTaskId  
-        ? { ...task, title: editTaskName, description: editTaskDesc, assignedTo: editTaskAssign }  
-        : task  
-    );  
+  e.preventDefault();  
+    
+  // Find the original task to compare assignedTo  
+  const originalTask = tasks.find(task => task.id === editTaskId);  
+  const oldAssignedTo = originalTask?.assignedTo;  
+    
+  const updatedTasks = tasks.map(task =>  
+    task.id === editTaskId  
+      ? {   
+          ...task,   
+          title: editTaskName,   
+          description: editTaskDesc,   
+          assignedTo: editTaskAssign,  
+          priority: editTaskPriority,  
+          dueDate: editTaskDueDate  
+        }  
+      : task  
+  );  
+    
+  setTasks(updatedTasks);  
+  setEditTaskId(null);  
+  setEditTaskName('');  
+  setEditTaskDesc('');  
+  setEditTaskAssign('');  
+  setEditTaskPriority('Medium');  
+  setEditTaskDueDate('');  
+  setShowEditTask(false);  
+  await saveTasks(updatedTasks);  
+    
+  // If assignedTo changed, call Cloud Function to sync  
+  if (oldAssignedTo !== editTaskAssign) {  
+    try {  
+      const updatedTask = updatedTasks.find(task => task.id === editTaskId);  
+      const FUNCTION_URL = "https://us-central1-projectpulse-ad152.cloudfunctions.net/updateTaskAssignment";  
+        
+      const res = await fetch(FUNCTION_URL, {  
+        method: "POST",  
+        mode: "cors",  
+        headers: {  
+          "Content-Type": "application/json"  
+        },  
+        body: JSON.stringify({   
+          taskId: editTaskId,  
+          oldAssignedTo: oldAssignedTo,  
+          newAssignedTo: editTaskAssign,  
+          updatedTask: updatedTask  
+        })  
+      });  
+  
+      if (!res.ok) {  
+        const text = await res.text();  
+        throw new Error(text);  
+      }  
+    } catch (err) {  
+      console.error("🔥 Error updating task assignment:", err);  
+      alert("Task updated locally, but failed to sync with assignee: " + err.message);  
+    }  
+  }  
+};
+  const deleteTask = async (taskId) => {  
+  if (window.confirm('Are you sure you want to delete this task?')) {  
+    // Find the task to get assignedTo info  
+    const taskToDelete = tasks.find(task => task.id === taskId);  
+      
+    // Delete from local state and current user's board  
+    const updatedTasks = tasks.filter(task => task.id !== taskId);  
     setTasks(updatedTasks);  
-    setEditTaskId(null);  
-    setEditTaskName('');  
-    setEditTaskDesc('');  
-    setEditTaskAssign('');  
     await saveTasks(updatedTasks);  
-  };  
+      
+    // If task was assigned to someone else, delete from their board too  
+    if (taskToDelete?.assignedTo && taskToDelete.assignedTo !== user.email) {  
+      try {  
+        const FUNCTION_URL = "https://us-central1-projectpulse-ad152.cloudfunctions.net/deleteTask";  
+          
+        const res = await fetch(FUNCTION_URL, {  
+          method: "POST",  
+          mode: "cors",  
+          headers: {  
+            "Content-Type": "application/json"  
+          },  
+          body: JSON.stringify({   
+            taskId: taskId,  
+            assignedToEmail: taskToDelete.assignedTo   
+          })  
+        });  
+  
+        if (!res.ok) {  
+          const text = await res.text();  
+          throw new Error(text);  
+        }  
+      } catch (err) {  
+        console.error("🔥 Error deleting assigned task:", err);  
+        alert("Task deleted from your board, but failed to delete from assignee's board: " + err.message);  
+      }  
+    }  
+  }  
+};
   
   // Move task to new status  
   const moveTask = async (id, newStatus) => {  
@@ -392,6 +483,37 @@ const Dashboard = () => {
           </form>  
         </div>  
       )}  
+      
+      {showEditTask && (  
+        <div className="add-task-modal" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>  
+          <form onSubmit={saveEditTask} style={{ background: 'linear-gradient(120deg, #fff 60%, #E1E8F0 100%)', padding: 32, borderRadius: 16, minWidth: 340, boxShadow: '0 8px 32px rgba(0,150,136,0.10)', border: '2px solid #009688', width: '100%', maxWidth: 420 }}>  
+            <h3 style={{ marginBottom: 20, fontSize: '1.35rem', fontWeight: 700, color: '#4B2067', textAlign: 'center', letterSpacing: '0.5px' }}>Edit Task</h3>  
+            <label style={{ fontWeight: 500, color: '#4B2067', marginBottom: 4 }}>Task Name</label>  
+            <input type="text" value={editTaskName} onChange={e => setEditTaskName(e.target.value)} style={{ width: '100%', marginBottom: 14, padding: 10, borderRadius: 7, border: '1px solid #E1E8F0', fontSize: '1rem', background: '#F3F3F3', outline: 'none' }} required />  
+            <label style={{ fontWeight: 500, color: '#4B2067', marginBottom: 4 }}>Description</label>  
+            <textarea value={editTaskDesc} onChange={e => setEditTaskDesc(e.target.value)} style={{ width: '100%', marginBottom: 14, padding: 10, borderRadius: 7, border: '1px solid #E1E8F0', fontSize: '1rem', background: '#F3F3F3', outline: 'none' }} />  
+            <label style={{ fontWeight: 500, color: '#4B2067', marginBottom: 4 }}>Assign To</label>  
+            <select value={editTaskAssign} onChange={e => setEditTaskAssign(e.target.value)} style={{ width: '100%', marginBottom: 14, padding: 10, borderRadius: 7, border: '1px solid #E1E8F0', fontSize: '1rem', background: '#F3F3F3', outline: 'none', cursor: 'pointer' }}>  
+              <option value="">Select an employee</option>  
+              {users.map(user => (  
+                <option key={user.uid} value={user.email}>{user.displayName}</option>  
+              ))}  
+            </select>  
+            <label style={{ fontWeight: 500, color: '#4B2067', marginBottom: 4 }}>Priority</label>  
+            <select value={editTaskPriority} onChange={e => setEditTaskPriority(e.target.value)} style={{ width: '100%', marginBottom: 14, padding: 10, borderRadius: 7, border: '1px solid #E1E8F0', fontSize: '1rem', background: '#F3F3F3', outline: 'none' }}>  
+              <option value="High">High</option>  
+              <option value="Medium">Medium</option>  
+              <option value="Low">Low</option>  
+            </select>  
+            <label style={{ fontWeight: 500, color: '#4B2067', marginBottom: 4 }}>Due Date</label>  
+            <input type="date" value={editTaskDueDate} onChange={e => setEditTaskDueDate(e.target.value)} style={{ width: '100%', marginBottom: 20, padding: 10, borderRadius: 7, border: '1px solid #E1E8F0', fontSize: '1rem', background: '#F3F3F3', outline: 'none' }} />  
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>  
+              <button type="button" onClick={() => setShowEditTask(false)} style={{ background: '#eee', color: '#4B2067', border: 'none', padding: '10px 22px', borderRadius: 7, fontWeight: 500, fontSize: '1rem', boxShadow: '0 2px 8px rgba(75,32,103,0.10)', cursor: 'pointer' }}>Cancel</button>  
+              <button type="submit" style={{ background: 'linear-gradient(90deg, #009688 0%, #4B2067 100%)', color: '#fff', border: 'none', padding: '10px 22px', borderRadius: 7, fontWeight: 500, fontSize: '1rem', boxShadow: '0 2px 8px rgba(0,150,136,0.10)', cursor: 'pointer', transition: 'background 0.2s, box-shadow 0.2s' }}>Save Changes</button>  
+            </div>  
+          </form>  
+        </div>  
+      )}
       <div className="kanban-board">  
         {role === 'admin' && showAssignedTasks ? (  
           <AssignedTasks  
@@ -464,17 +586,45 @@ const Dashboard = () => {
                                   ))}    
                                 </div>    
                               )}  
-                              <div className="task-actions">  
-                                {status !== 'todo' && (  
-                                  <button onClick={() => moveTask(task.id, 'todo')}>To Do</button>  
-                                )}  
-                                {status !== 'progress' && (  
-                                  <button onClick={() => moveTask(task.id, 'progress')}>Progress</button>  
-                                )}  
-                                {status !== 'completed' && (  
-                                  <button onClick={() => moveTask(task.id, 'completed')}>Completed</button>  
-                                )}  
-                              </div>  
+                              <div className="task-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>  
+                              {role === 'admin' && (  
+                                <button   
+                                  onClick={() => startEditTask(task)}   
+                                  style={{   
+                                    background: '#1976d2',   
+                                    color: '#fff',   
+                                    padding: '6px 12px',   
+                                    fontSize: '0.85rem',  
+                                    border: 'none',  
+                                    borderRadius: '4px',  
+                                    cursor: 'pointer'  
+                                  }}  
+                                >Edit</button>  
+                              )}  
+                              {role === 'admin' && (  
+                                <button   
+                                  onClick={() => deleteTask(task.id)}   
+                                  style={{   
+                                    background: '#d32f2f',   
+                                    color: '#fff',   
+                                    padding: '6px 12px',   
+                                    fontSize: '0.85rem',  
+                                    border: 'none',  
+                                    borderRadius: '4px',  
+                                    cursor: 'pointer'  
+                                  }}  
+                                >Delete</button>  
+                              )}  
+                              {status !== 'todo' && (  
+                                <button onClick={() => moveTask(task.id, 'todo')}>To Do</button>  
+                              )}  
+                              {status !== 'progress' && (  
+                                <button onClick={() => moveTask(task.id, 'progress')}>Progress</button>  
+                              )}  
+                              {status !== 'completed' && (  
+                                <button onClick={() => moveTask(task.id, 'completed')}>Completed</button>  
+                              )}  
+                            </div>
                             </li>  
                           )}  
                         </Draggable>  
