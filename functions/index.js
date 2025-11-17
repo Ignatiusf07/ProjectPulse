@@ -42,15 +42,15 @@ exports.assignTask = functions.https.onRequest((req, res) => {
   
       //Send email notification  
       const transporter = nodemailer.createTransport({  
-        service: 'gmail',  
-        auth: {  
-          user: functions.config().email.user,  
-          pass: functions.config().email.password  
-        }  
-      });  
+      service: 'gmail',  
+      auth: {  
+        user: process.env.EMAIL_USER,  
+        pass: process.env.EMAIL_PASSWORD  
+      }  
+    });
   
       const mailOptions = {  
-        from: functions.config().email.user,  
+       from: process.env.EMAIL_USER, 
         to: newTask.assignedTo,  
         subject: `New Task Assigned: ${newTask.title}`,  
         html: `  
