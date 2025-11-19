@@ -1,7 +1,9 @@
 /* eslint-env node */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const cors = require("cors")({ origin: "http://localhost:5173" });
+const cors = require("cors")({   
+  origin: ["http://localhost:5173", "https://project-pulse-zeta.vercel.app/"]   
+});
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -78,6 +80,65 @@ exports.assignTask = functions.https.onRequest((req, res) => {
     }  
   });  
 });
+
+exports.syncTaskStatus = functions.firestore  
+  .document('kanbanBoards/{userId}')  
+  .onUpdate(async (change, context) => {  
+    const userId = context.params.userId;  
+    const before = change.before.data().tasks || [];  
+    const after = change.after.data().tasks || [];  
+      
+    // Find tasks that changed status  
+    const changedTasks = after.filter(afterTask => {  
+      const beforeTask = before.find(t => t.id === afterTask.id);  
+      return beforeTask && beforeTask.status !== afterTask.status;  
+    });  
+      
+    if (changedTasks.length === 0) {  
+      return null; // No status changes  
+    }  
+      
+    // For each changed task, sync to the creator's board  
+    for (const task of changedTasks) {  
+      if (task.createdBy) {  
+        try {  
+          // Query profiles to find admin's UID  
+          const adminQuery = await admin.firestore()  
+            .collection('profiles')  
+            .where('email', '==', task.createdBy)  
+            .get();  
+            
+          if (!adminQuery.empty) {  
+            const adminUid = adminQuery.docs[0].id;  
+              
+            // Don't sync if the user updating is the admin themselves  
+            if (adminUid === userId) {  
+              continue;  
+            }  
+              
+            const adminBoardRef = admin.firestore()  
+              .collection('kanbanBoards')  
+              .doc(adminUid);  
+              
+            const adminBoard = await adminBoardRef.get();  
+            if (adminBoard.exists) {  
+              const adminTasks = adminBoard.data().tasks || [];  
+              const updatedTasks = adminTasks.map(t =>   
+                t.id === task.id ? { ...t, status: task.status } : t  
+              );  
+              await adminBoardRef.set({ tasks: updatedTasks });  
+              console.log(`✅ Synced task ${task.id} status to admin ${adminUid}`);  
+            }  
+          }  
+        } catch (error) {  
+          console.error(`❌ Error syncing task ${task.id}:`, error);  
+        }  
+      }  
+    }  
+      
+    return null;  
+  });
+
 exports.deleteTask = functions.https.onRequest((req, res) => {  
   cors(req, res, async () => {  
     // Allow preflight OPTIONS request  
