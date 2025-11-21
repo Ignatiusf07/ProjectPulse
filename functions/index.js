@@ -1,6 +1,7 @@
 /* eslint-env node */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const cors = require("cors")({ origin: "http://localhost:5173" });
 
 if (!admin.apps.length) {
@@ -78,6 +79,76 @@ exports.assignTask = functions.https.onRequest((req, res) => {
     }  
   });  
 });
+exports.syncTaskStatus = onDocumentUpdated("kanbanBoards/{userId}", async (event) => {  
+  const userId = event.params.userId;  
+  const before = event.data.before.data()?.tasks || [];  
+  const after = event.data.after.data()?.tasks || [];  
+    
+  // Find tasks that changed status  
+  const changedTasks = after.filter(afterTask => {  
+    const beforeTask = before.find(t => t.id === afterTask.id);  
+    return beforeTask && beforeTask.status !== afterTask.status;  
+  });  
+    
+  if (changedTasks.length === 0) {  
+    return null;  
+  }  
+    
+  // For each changed task, determine sync direction  
+  for (const task of changedTasks) {  
+    if (task.createdBy && task.assignedTo) {  
+      try {  
+        // Query profiles to find admin's UID  
+        const adminQuery = await admin.firestore()  
+          .collection('profiles')  
+          .where('email', '==', task.createdBy)  
+          .get();  
+          
+        // Query profiles to find assignee's UID  
+        const assigneeQuery = await admin.firestore()  
+          .collection('profiles')  
+          .where('email', '==', task.assignedTo)  
+          .get();  
+          
+        if (!adminQuery.empty && !assigneeQuery.empty) {  
+          const adminUid = adminQuery.docs[0].id;  
+          const assigneeUid = assigneeQuery.docs[0].id;  
+            
+          // Determine who made the change and sync to the other person  
+          let targetUid;  
+          if (userId === adminUid) {  
+            // Admin made the change, sync to assignee  
+            targetUid = assigneeUid;  
+          } else if (userId === assigneeUid) {  
+            // Assignee made the change, sync to admin  
+            targetUid = adminUid;  
+          } else {  
+            continue; // Neither admin nor assignee made the change  
+          }  
+            
+          const targetBoardRef = admin.firestore()  
+            .collection('kanbanBoards')  
+            .doc(targetUid);  
+            
+          const targetBoard = await targetBoardRef.get();  
+          if (targetBoard.exists) {  
+            const targetTasks = targetBoard.data().tasks || [];  
+            const updatedTasks = targetTasks.map(t =>  
+              t.id === task.id ? { ...t, status: task.status } : t  
+            );  
+            await targetBoardRef.set({ tasks: updatedTasks });  
+            console.log(`✅ Synced task ${task.id} status from ${userId} to ${targetUid}`);  
+          }  
+        }  
+      } catch (error) {  
+        console.error(`❌ Error syncing task ${task.id}:`, error);  
+      }  
+    }  
+  }  
+    
+  return null;  
+});
+
 exports.deleteTask = functions.https.onRequest((req, res) => {  
   cors(req, res, async () => {  
     // Allow preflight OPTIONS request  
@@ -181,15 +252,15 @@ exports.updateTaskAssignment = functions.https.onRequest((req, res) => {
   
           // Send email notification  
           const transporter = nodemailer.createTransport({  
-            service: 'gmail',  
-            auth: {  
-              user: functions.config().email.user,  
-              pass: functions.config().email.password  
-            }  
-          });  
+          service: 'gmail',  
+          auth: {  
+            user: process.env.EMAIL_USER,  
+            pass: process.env.EMAIL_PASSWORD  
+          }  
+        });
   
           const mailOptions = {  
-            from: functions.config().email.user,  
+            from: process.env.EMAIL_USER,  
             to: newAssignedTo,  
             subject: `Task Reassigned: ${updatedTask.title}`,  
             html: `  
